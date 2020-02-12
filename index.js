@@ -798,10 +798,24 @@ SendStream.prototype.stream = function stream (path, options) {
   var stream = fs.createReadStream(path, options)
   this.emit('stream', stream)
 
-  if(this.transform)
-    stream.pipe(this.transform).pipe(res)
-  else
+  if(!this.transform) {
     stream.pipe(res)
+  }
+  else {
+    stream.pipe(this.transform).pipe(res)
+    
+    this.transform.on('error', function onerror (err) {
+      // request already finished
+      if (finished) return
+
+      // clean up stream
+      finished = true
+      destroy(stream)
+
+      // error
+      self.onStatError(err)
+    })
+  }
 
   // response finished, done with the fd
   onFinished(res, function onfinished () {
