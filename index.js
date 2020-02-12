@@ -102,6 +102,8 @@ function SendStream (req, path, options) {
   this.path = path
   this.req = req
 
+  this.transform = opts.transform;
+
   this._acceptRanges = opts.acceptRanges !== undefined
     ? Boolean(opts.acceptRanges)
     : true
@@ -795,7 +797,11 @@ SendStream.prototype.stream = function stream (path, options) {
   // pipe
   var stream = fs.createReadStream(path, options)
   this.emit('stream', stream)
-  stream.pipe(res)
+
+  if(this.transform)
+    stream.pipe(this.transform).pipe(res)
+  else
+    stream.pipe(res)
 
   // response finished, done with the fd
   onFinished(res, function onfinished () {
